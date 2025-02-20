@@ -125,13 +125,6 @@
 
 ---
 
-## 🔗 Related References
-- **Eric Manilloff's original concept** (Autofill form detection).
-- **Selenium & ChromeDriver automation**.
-- **Using `undetected_chromedriver` to avoid bot detection**.
-
----
-
 ### 🛠 Want to Contribute?
 - **Fork the repository**.
 - **Suggest new improvements**.
