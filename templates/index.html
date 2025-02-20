@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultScope - Autofill Inspector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 VaultScope - Autofill Inspector</h1>
+        <p>Enter a login page URL to analyze autofill parameters:</p>
+        <input type="text" id="urlInput" placeholder="Enter Login Page URL">
+        <button onclick="analyze()">Analyze</button>
+
+        <h2>Keeper Autofill JSON:</h2>
+        <pre id="jsonOutput"></pre>
+
+        <h2>Keeper Autofill YAML:</h2>
+        <pre id="yamlOutput"></pre>
+    </div>
+
+    <script>
+        function analyze() {
+            let url = document.getElementById("urlInput").value;
+            fetch("/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("jsonOutput").textContent = data.json;
+                document.getElementById("yamlOutput").textContent = data.yaml;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>
