@@ -1,0 +1,9 @@
+Flask
+gunicorn
+webdriver-manager
+requests
+beautifulsoup4
+pyyaml
+validators
+selenium
+undetected-chromedriver

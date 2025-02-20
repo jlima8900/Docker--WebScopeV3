@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  vaultscope:
+    build: .
+    container_name: vaultscope
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "9017:9017"
