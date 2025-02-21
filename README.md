@@ -123,12 +123,6 @@
 ✅ **Runs securely over HTTPS** with a **self-signed SSL certificate**.  
 ✅ **Containerized with Docker** for easy deployment.  
 
----
-
-### 🛠 Want to Contribute?
-- **Fork the repository**.
-- **Suggest new improvements**.
-- **Help refine detection accuracy!**
 
 ---
 
