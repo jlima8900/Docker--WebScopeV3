@@ -9,9 +9,11 @@ from flask import Flask, request, jsonify, render_template
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # VaultScope Branding
-APP_NAME = "🔐 VaultScope - Autofill Inspector"
+APP_NAME = "🔐 WebScope - Autofill Inspector"
 
 # Load allowed IPs and Port from environment variables
 ALLOWED_IPS = os.getenv("ALLOWED_IPS", "0.0.0.0/0")
@@ -23,11 +25,79 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logging.info(f"{APP_NAME} is starting up... 🔍")
 
+def detect_login_fields(driver):
+    """Tries to detect login fields within the active frame."""
+    autofill_data = {
+        "username-field": "N/A",
+        "password-field": "N/A",
+        "totp-code-field": "N/A",
+        "submit-button": "N/A"
+    }
+
+    logging.info("🔎 Scanning for login fields...")
+
+    # Try detecting username field
+    username_selectors = [
+        "input[autocomplete='username']", "input[type='text'][name*='user']", "input[type='email']",
+        "input[name='loginfmt']", "input[id*='user']", "input[name='login']", "input[name='email']",
+        "input[id*='email']", "input[placeholder*='email']", "input[placeholder*='username']",
+        "input[aria-label*='username']", "input[aria-label*='email']", "input[name='session[username_or_email]']",
+        "input[id='identifierId']", "input[type='text'][id*='login']"
+    ]
+    for selector in username_selectors:
+        elements = driver.find_elements(By.CSS_SELECTOR, selector)
+        if elements:
+            logging.info(f"✅ Found {len(elements)} username field(s) matching: {selector}")
+            autofill_data["username-field"] = selector
+            break
+
+    # Try detecting password field
+    password_selectors = [
+        "input[autocomplete='current-password']", "input[type='password'][name*='pass']",
+        "input[name='passwd']", "input[id*='pass']", "input[type='password']", "input[aria-label*='password']",
+        "input[placeholder*='password']", "input[autocomplete='new-password']", "input[name='session[password]']",
+        "input[type='password'][id*='login']", "input[id='Passwd']"
+    ]
+    for selector in password_selectors:
+        elements = driver.find_elements(By.CSS_SELECTOR, selector)
+        if elements:
+            logging.info(f"✅ Found {len(elements)} password field(s) matching: {selector}")
+            autofill_data["password-field"] = selector
+            break
+
+    # Try detecting TOTP field (2FA)
+    totp_selectors = [
+        "input[autocomplete='one-time-code']", "input[name*='otp']", "input[name*='totp']",
+        "input[type='text'][id*='otp']", "input[placeholder*='one-time code']", "input[aria-label*='2fa']",
+        "input[aria-label*='security code']", "input[type='text'][name*='twofactor']", "input[name='verification_code']"
+    ]
+    for selector in totp_selectors:
+        elements = driver.find_elements(By.CSS_SELECTOR, selector)
+        if elements:
+            logging.info(f"✅ Found {len(elements)} TOTP field(s) matching: {selector}")
+            autofill_data["totp-code-field"] = selector
+            break
+
+    # Try detecting submit button
+    submit_buttons = driver.find_elements(By.CSS_SELECTOR, "button[type='submit'], input[type='submit'], button[name='login'], button[id*='signin']")
+    if submit_buttons:
+        logging.info(f"✅ Found {len(submit_buttons)} submit button(s).")
+        autofill_data["submit-button"] = "button[type='submit']"
+
+    return autofill_data
+
 def extract_autofill_parameters(url):
     """Use Selenium to dynamically analyze a page and extract autofill selectors."""
-    
-    driver = None  # Initialize driver to avoid `referenced before assignment` error
-    
+
+    driver = None  # Initialize driver
+    autofill_data = {  # ✅ Ensure autofill_data is always initialized
+        "page": url,
+        "username-field": "N/A",
+        "password-field": "N/A",
+        "totp-code-field": "N/A",
+        "submit-button": "N/A"
+    }
+
     try:
         logging.info(f"Analyzing page: {url}")
 
@@ -37,93 +107,55 @@ def extract_autofill_parameters(url):
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--ignore-certificate-errors")  # ✅ Ignore SSL certificate errors
-        options.add_argument("--allow-insecure-localhost")  # ✅ Accept self-signed certs
-        
-        # Use undetected ChromeDriver to avoid bot detection
+        options.add_argument("--ignore-certificate-errors")
+        options.add_argument("--allow-insecure-localhost")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+
         driver = uc.Chrome(options=options, use_subprocess=True)
         driver.get(url)
 
-        time.sleep(7)  # Ensure JavaScript executes
+        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
-        # Simulate User Interaction to Trigger Login Form
+        time.sleep(5)
+
+        # Simulate User Interaction
         try:
             body = driver.find_element(By.TAG_NAME, "body")
             ActionChains(driver).move_to_element(body).click().perform()
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(3)  # Wait after interaction
+            time.sleep(3)
         except Exception as e:
             logging.warning(f"User interaction failed: {str(e)}")
 
-        # Detect if page has iframes (Common for login forms)
+        # Detect iframes and extract fields
         iframes = driver.find_elements(By.TAG_NAME, "iframe")
         logging.info(f"🔍 Found {len(iframes)} iframe(s) on the page.")
 
-        # Switch to iframe if necessary
         if iframes:
-            try:
-                driver.switch_to.frame(iframes[0])
-                logging.info("✅ Switched to first iframe.")
+            for iframe in iframes:
+                try:
+                    driver.switch_to.frame(iframe)
+                    logging.info("✅ Switched to iframe, trying field detection...")
 
-                nested_iframes = driver.find_elements(By.TAG_NAME, "iframe")
-                logging.info(f"🔍 Found {len(nested_iframes)} nested iframe(s).")
+                    iframe_autofill_data = detect_login_fields(driver)
 
-                if nested_iframes:
-                    driver.switch_to.frame(nested_iframes[0])
-                    logging.info("✅ Switched to nested iframe.")
-            except Exception as e:
-                logging.warning(f"Error switching iframes: {str(e)}")
+                    if iframe_autofill_data["username-field"] != "N/A" or iframe_autofill_data["password-field"] != "N/A":
+                        logging.info("🎯 Login fields found inside an iframe, using this data.")
+                        autofill_data = iframe_autofill_data
+                        break
 
-        # Structure to store detected autofill fields
-        autofill_data = {
-            "page": url,
-            "username-field": "N/A",
-            "password-field": "N/A",
-            "totp-code-field": "N/A",
-            "submit-button": "N/A"
-        }
+                except Exception as e:
+                    logging.warning(f"Error switching to iframe: {str(e)}")
 
-        # Find username field
-        username_selectors = [
-            "input[autocomplete='username']", "input[type='text'][name*='user']",
-            "input[type='email']", "input[name='loginfmt']", "input[id*='user']"
-        ]
-        for selector in username_selectors:
-            elements = driver.find_elements(By.CSS_SELECTOR, selector)
-            if elements:
-                autofill_data["username-field"] = selector
-                break
+            driver.switch_to.default_content()
+            logging.info("🔙 Switched back to main page after iframe analysis.")
 
-        # Find password field
-        password_selectors = [
-            "input[autocomplete='current-password']", "input[type='password'][name*='pass']",
-            "input[name='passwd']", "input[id*='pass']"
-        ]
-        for selector in password_selectors:
-            elements = driver.find_elements(By.CSS_SELECTOR, selector)
-            if elements:
-                autofill_data["password-field"] = selector
-                break
+        # If no fields were found in iframes, try main page
+        if autofill_data["username-field"] == "N/A" and autofill_data["password-field"] == "N/A":
+            logging.info("🔍 No login fields detected in iframes, scanning main page...")
+            autofill_data = detect_login_fields(driver)
 
-        # Find TOTP field (2FA)
-        totp_selectors = [
-            "input[autocomplete='one-time-code']", "input[name*='otp']", "input[name*='totp']",
-            "input[type='text'][id*='otp']"
-        ]
-        for selector in totp_selectors:
-            elements = driver.find_elements(By.CSS_SELECTOR, selector)
-            if elements:
-                autofill_data["totp-code-field"] = selector
-                break
-
-        # Detect submit button
-        submit_buttons = driver.find_elements(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']")
-        if submit_buttons:
-            autofill_data["submit-button"] = "button[type='submit']"
-
-        # Save a screenshot for debugging
         driver.save_screenshot("/app/screenshot.png")
-        logging.info("📸 Screenshot saved as /app/screenshot.png")
 
         return autofill_data
 
@@ -135,7 +167,6 @@ def extract_autofill_parameters(url):
         if driver:
             driver.quit()
 
-# Flask Routes
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -155,6 +186,10 @@ def analyze():
 
     return jsonify(response_data)
 
+@app.route("/interactive")
+def interactive():
+    return render_template("interactive.html")
+
 if __name__ == '__main__':
-    context = ('ssl/server.crt', 'ssl/server.key')  # Self-signed cert
+    context = ('ssl/server.crt', 'ssl/server.key')
     app.run(debug=False, host='0.0.0.0', port=PORT, ssl_context=context)
