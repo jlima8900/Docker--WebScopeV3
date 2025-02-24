@@ -7,3 +7,6 @@ pyyaml
 validators
 selenium
 undetected-chromedriver
+flask-socketio
+eventlet
+
