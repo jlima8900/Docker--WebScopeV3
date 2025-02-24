@@ -1,6 +1,6 @@
-# 🔐 VaultScope - Autofill Inspector
+# 🔐 WebScope - Autofill Inspector
 
-**VaultScope** is a tool for dynamically analyzing web login pages and extracting autofill selectors. This project expands upon the original concept by **Eric Manilloff**, introducing major **security, performance, and usability improvements**.
+**WebScope** is a tool for dynamically analyzing web login pages and extracting autofill selectors. This project expands upon the original concept by **Eric Manilloff**, introducing major **security, performance, and usability improvements**.
 
 ---
 
