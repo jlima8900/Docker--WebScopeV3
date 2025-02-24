@@ -5,10 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VaultScope - Autofill Inspector</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script> <!-- ✅ WebSocket support -->
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #ffffff; text-align: center; }
+        h1 { color: #ffcc00; }
+        #log-container { 
+            width: 90%; height: 400px; 
+            background-color: black; color: green; 
+            overflow-y: scroll; border: 1px solid #555; padding: 10px;
+            margin: auto; text-align: left; font-family: monospace;
+        }
+        .log-line { white-space: pre-wrap; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 VaultScope - Autofill Inspector</h1>
+        <h1>🔐 WebScope - Autofill Inspector</h1>
         <p>Enter a login page URL to analyze autofill parameters:</p>
         <input type="text" id="urlInput" placeholder="Enter Login Page URL">
         <button onclick="analyze()">Analyze</button>
@@ -18,9 +30,19 @@
 
         <h2>Keeper Autofill YAML:</h2>
         <pre id="yamlOutput"></pre>
+
+        <br>
+        <a href="/interactive" style="font-size: 18px; color: blue; text-decoration: underline;">🔍 Try Interactive Mode</a>
+
+        <!-- ✅ NEW: Live Logs Section -->
+        <h2>📡 Live Logs:</h2>
+        <button onclick="startLogs()">Start Logs</button>
+        <div id="log-container"></div>
     </div>
 
     <script>
+        var socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port);
+
         function analyze() {
             let url = document.getElementById("urlInput").value;
             fetch("/analyze", {
@@ -35,6 +57,20 @@
             })
             .catch(error => console.error("Error:", error));
         }
+
+        function startLogs() {
+            socket.emit("start_logs");  // ✅ Request logs from server
+        }
+
+        socket.on("log_update", function(data) {
+            let logContainer = document.getElementById("log-container");
+            let logLine = document.createElement("div");
+            logLine.className = "log-line";
+            logLine.textContent = data.log;
+            logContainer.appendChild(logLine);
+            logContainer.scrollTop = logContainer.scrollHeight;  // Auto-scroll
+        });
     </script>
+
 </body>
 </html>
