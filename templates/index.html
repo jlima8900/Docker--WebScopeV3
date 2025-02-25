@@ -3,48 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaultScope - Autofill Inspector</title>
+    <title>WebScope 2.0 - Autofill Inspector</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script> <!-- ✅ WebSocket support -->
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: #ffffff; text-align: center; }
-        h1 { color: #ffcc00; }
-        #log-container { 
-            width: 90%; height: 400px; 
-            background-color: black; color: green; 
-            overflow-y: scroll; border: 1px solid #555; padding: 10px;
-            margin: auto; text-align: left; font-family: monospace;
+        .container {
+            max-width: 1200px; /* ✅ Increased width */
+            margin: auto;
+            text-align: center;
         }
-        .log-line { white-space: pre-wrap; }
+        h1 {
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #bbb;
+            margin-bottom: 20px;
+        }
+        .results-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px; /* ✅ Space between boxes */
+        }
+        .results-box {
+            flex: 1; /* ✅ Ensure equal width */
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #111;
+            color: #fff;
+            font-family: monospace;
+            text-align: left;
+            overflow-x: auto;
+            position: relative; /* ✅ Needed for button placement */
+        }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px;
+            background-color: gold;
+            border: none;
+            cursor: pointer;
+            font-size: 12px; /* ✅ Smaller button */
+        }
+        .copy-btn:hover {
+            background-color: darkgoldenrod;
+        }
+        input {
+            width: 80%;
+            padding: 8px;
+            font-size: 16px;
+            color: #bbb;
+            background-color: #222;
+            border: 1px solid #555;
+        }
+        input::placeholder {
+            color: #777;
+        }
+        button {
+            padding: 8px 15px;
+            font-size: 16px;
+            background-color: gold;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: darkgoldenrod;
+        }
+        .left-aligned {
+            text-align: left;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: gold;
+        }
+        /* ✅ Live Logs Styling */
+        .log-container {
+            width: 100%;
+            background: #000;
+            padding: 15px;
+            height: 250px;
+            overflow-y: scroll;
+            border-radius: 5px;
+            border: 1px solid #444;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 WebScope - Autofill Inspector</h1>
+        <h1>🔍 WebScope 2.0 - Autofill Inspector</h1>
+        <p class="subtitle">Formerly VaultScope</p>
         <p>Enter a login page URL to analyze autofill parameters:</p>
-        <input type="text" id="urlInput" placeholder="Enter Login Page URL">
+
+        <input type="text" id="urlInput" placeholder="e.g. https://example.com/login">
         <button onclick="analyze()">Analyze</button>
 
-        <h2>Keeper Autofill JSON:</h2>
-        <pre id="jsonOutput"></pre>
+        <div class="results-container">
+            <div class="results-box">
+                <h2>Keeper Autofill JSON:</h2>
+                <button class="copy-btn" onclick="copyToClipboard('jsonOutput')">📋</button>
+                <pre id="jsonOutput"></pre>
+            </div>
+            <div class="results-box">
+                <h2>Keeper Autofill YAML:</h2>
+                <button class="copy-btn" onclick="copyToClipboard('yamlOutput')">📋</button>
+                <pre id="yamlOutput"></pre>
+            </div>
+        </div>
 
-        <h2>Keeper Autofill YAML:</h2>
-        <pre id="yamlOutput"></pre>
-
-        <br>
-        <a href="/interactive" style="font-size: 18px; color: blue; text-decoration: underline;">🔍 Try Interactive Mode</a>
-
-        <!-- ✅ NEW: Live Logs Section -->
-        <h2>📡 Live Logs:</h2>
-        <button onclick="startLogs()">Start Logs</button>
-        <div id="log-container"></div>
+        <!-- ✅ Merged Live Logs Section -->
+        <h2 class="left-aligned">📜 Live Logs:</h2>
+        <div class="log-container" id="logWindow"></div>
     </div>
 
     <script>
-        var socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port);
-
         function analyze() {
             let url = document.getElementById("urlInput").value;
+
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                alert("⚠️ Please enter a valid URL including 'https://'");
+                return;
+            }
+
             fetch("/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -58,19 +139,24 @@
             .catch(error => console.error("Error:", error));
         }
 
-        function startLogs() {
-            socket.emit("start_logs");  // ✅ Request logs from server
+        // ✅ Function to copy content to clipboard
+        function copyToClipboard(elementId) {
+            let text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Copied to clipboard!");
+            }).catch(err => {
+                console.error("Error copying text: ", err);
+            });
         }
 
-        socket.on("log_update", function(data) {
-            let logContainer = document.getElementById("log-container");
-            let logLine = document.createElement("div");
-            logLine.className = "log-line";
-            logLine.textContent = data.log;
-            logContainer.appendChild(logLine);
-            logContainer.scrollTop = logContainer.scrollHeight;  // Auto-scroll
-        });
-    </script>
+        // ✅ Fetch and display live logs
+        const logWindow = document.getElementById("logWindow");
+        const eventSource = new EventSource("/stream-logs");
 
+        eventSource.onmessage = function(event) {
+            logWindow.innerHTML += event.data + "<br>";
+            logWindow.scrollTop = logWindow.scrollHeight; // Auto-scroll
+        };
+    </script>
 </body>
 </html>
