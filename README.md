@@ -107,7 +107,7 @@ This project is provided for **personal, educational, and internal research use 
 
 If you're interested in using WebScope in a commercial product or business context, please contact the creator to discuss licensing terms.
 
-📬 Contact: [your-email@example.com or your website/contact page]
+📬 Contact: jlima8900@hotmail.com
 
 ---
 
