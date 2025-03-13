@@ -111,6 +111,6 @@ If you're interested in using WebScope in a commercial product or business conte
 
 ---
 
-## ✨ Built by
+## ✨ Built by Joao Lima
 
-A developer with a deep curiosity for browser automation, authentication flows, and web security tooling.
+Someone with a deep curiosity for browser automation, authentication flows, and web security tooling.
