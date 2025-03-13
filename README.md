@@ -1,8 +1,4 @@
-# 🌐 WebScope 3.0
-
-**WebScope 3.0** is a powerful browser automation and form analysis platform designed to identify, extract, and audit login forms and autofill fields from websites — via a clean API or interactive GUI.
-
----
+# 🌐 WebScope 4.0
 
 ## 🧠 What Makes WebScope Unique?
 
