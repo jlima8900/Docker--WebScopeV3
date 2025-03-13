@@ -43,6 +43,11 @@ WebScope is designed with modular containers — each browser tool runs in isola
 | `puppeteer-api`   | Puppeteer Wrapper  | 4446 | Custom Node.js Express API               |
 | `playwright-api`  | Playwright Wrapper | 4447 | Python or Node-based REST service        |
 
+<img width="581" alt="Screenshot 2025-03-13 at 6 48 58 a m" src="https://github.com/user-attachments/assets/25d5fdc6-f68c-45ab-a69f-fb661e1c15a4" />
+
+
+
+
 ---
 
 ## 🚀 Use Cases
