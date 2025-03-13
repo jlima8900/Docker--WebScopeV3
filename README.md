@@ -6,7 +6,7 @@ WebScope isn’t “just another browser automation tool.” It goes well beyond
 
 Where others focus on *automating interactions*, **WebScope focuses on understanding and interpreting web login flows**.
 
-### 🧩 What WebScope 3.0 Does:
+### 🧩 What WebScope 4.0 Does:
 
 - Scrapes live or JS-rendered pages using headless browsers
 - Detects login forms and autofill-related fields (username, email, password)
@@ -59,6 +59,10 @@ WebScope is designed with modular containers — each browser tool runs in isola
 - Building a dataset of form structures across the web
 - Powering browser-based scraping pipelines
 - API backend for autofill, form detection, or security tools
+
+## Kepper RBI Integration FLow Example
+
+
 
 ---
 
