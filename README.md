@@ -45,7 +45,9 @@ WebScope is designed with modular containers — each browser tool runs in isola
 
 <img width="581" alt="Screenshot 2025-03-13 at 6 48 58 a m" src="https://github.com/user-attachments/assets/25d5fdc6-f68c-45ab-a69f-fb661e1c15a4" />
 
+## Modern Alternatives You Could Add to WebScope 4.0
 
+<img width="604" alt="Screenshot 2025-03-13 at 6 50 24 a m" src="https://github.com/user-attachments/assets/77bcbbe9-3082-4ee7-9a49-8223b54faba2" />
 
 
 ---
